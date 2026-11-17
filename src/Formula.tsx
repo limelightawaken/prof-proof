@@ -1,10 +1,11 @@
 import katex from "katex";
 
-export function Formula({ tex }: { tex: string }) {
+export function Formula({ tex, display = true }: { tex: string; display?: boolean }) {
   const html = katex.renderToString(tex, {
     throwOnError: false,
-    displayMode: true,
+    displayMode: display,
     strict: "ignore",
   });
-  return <div className="formula" dangerouslySetInnerHTML={{ __html: html }} />;
+  if (display) return <div className="formula" dangerouslySetInnerHTML={{ __html: html }} />;
+  return <span className="formula inline" dangerouslySetInnerHTML={{ __html: html }} />;
 }

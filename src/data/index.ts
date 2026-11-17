@@ -18,10 +18,19 @@ import { numberTheory } from "./number-theory";
 import { numerical } from "./numerical";
 import { optimization } from "./optimization";
 import { partialDifferential } from "./pde";
+import { algebra } from "./algebra";
+import { calculus } from "./calculus";
+import { functionsBasic } from "./functions";
+import { notation } from "./notation";
+import { numbers } from "./numbers";
+import { proofLanguage } from "./proof";
 import { realAnalysis } from "./real-analysis";
 import { topology } from "./topology";
+import { trigonometry } from "./trigonometry";
+import { vectors } from "./vectors";
+import { formulaNotes } from "./formula-notes";
 
-export { fields };
+export { fields, formulaNotes };
 
 export const concepts: Concept[] = [
   ...realAnalysis,
@@ -44,6 +53,14 @@ export const concepts: Concept[] = [
   ...dynamics,
   ...algebraicGeometry,
   ...categoryTheory,
+  ...notation,
+  ...numbers,
+  ...algebra,
+  ...functionsBasic,
+  ...trigonometry,
+  ...calculus,
+  ...vectors,
+  ...proofLanguage,
 ];
 
 const seen = new Set<string>();
@@ -62,6 +79,21 @@ for (const field of fields) {
 
 if (concepts.length < 200) {
   throw new Error(`Expected at least 200 concepts, found ${concepts.length}`);
+}
+
+for (const concept of concepts) {
+  const note = formulaNotes[concept.id];
+  if (concept.formula) {
+    if (!note?.notation.trim() || !note.proof.trim()) {
+      throw new Error(`Formula on ${concept.id} needs a notation note and a proof`);
+    }
+  } else if (note) {
+    throw new Error(`Formula note on ${concept.id} but the card has no formula`);
+  }
+}
+
+for (const id of Object.keys(formulaNotes)) {
+  if (!seen.has(id)) throw new Error(`Formula note for unknown card ${id}`);
 }
 
 export const conceptMap = new Map(concepts.map((concept) => [concept.id, concept]));

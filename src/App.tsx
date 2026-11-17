@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { concepts, conceptsIn, fields } from "./data";
+import { concepts, conceptsIn, fields, formulaNotes } from "./data";
+import { NotationGuide } from "./NotationGuide";
 import { cardStatus, schedule } from "./srs";
 import { loadDeck, loadTheme, saveDeck, saveTheme, type Theme } from "./storage";
 import { Study } from "./Study";
-import type { CardStatus, Deck, Grade } from "./types";
+import type { CardStatus, Deck, Field, Grade } from "./types";
 
 type ReturnTo = { name: "home" } | { name: "field"; fieldId: string };
 
@@ -78,6 +79,8 @@ export function App() {
         concept.remember,
         concept.pitfall,
         field?.name ?? "",
+        formulaNotes[concept.id]?.notation ?? "",
+        formulaNotes[concept.id]?.proof ?? "",
       ]
         .join(" ")
         .toLowerCase();
@@ -163,6 +166,13 @@ export function App() {
               onOpenConcept={(id) =>
                 start("Search", rotateTo(results.map((concept) => concept.id), id), { name: "home" })
               }
+              onStudyNotation={() =>
+                start(
+                  "Notation",
+                  conceptsIn("notation").map((concept) => concept.id),
+                  { name: "home" },
+                )
+              }
               deck={deck}
               now={now}
               onClear={() => {
@@ -210,6 +220,7 @@ function Home({
   results,
   onOpenField,
   onOpenConcept,
+  onStudyNotation,
   deck,
   now,
   onClear,
@@ -224,6 +235,7 @@ function Home({
   results: typeof concepts;
   onOpenField: (fieldId: string) => void;
   onOpenConcept: (id: string) => void;
+  onStudyNotation: () => void;
   deck: Deck;
   now: number;
   onClear: () => void;
@@ -233,11 +245,12 @@ function Home({
   return (
     <>
       <section className="hero">
-        <p className="eyebrow">Flashcards for advanced mathematics</p>
+        <p className="eyebrow">Flashcards for mathematics</p>
         <h1>Say the idea before you turn the card.</h1>
         <p className="lede">
-          {concepts.length} concepts, from the completeness of the real line to adjoint functors. Each card is a
-          picture, the real statement, and one line worth keeping.
+          {concepts.length} concepts. If the symbols are unfamiliar, start with the guide and the first shelves. The
+          later shelves run from the completeness of the real line to adjoint functors. Each card is a picture, the
+          real statement, and one line worth keeping.
         </p>
       </section>
 
@@ -263,7 +276,7 @@ function Home({
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Compactness, residue, gcd, geodesic…"
+          placeholder="For every, slope, sine, compactness…"
           autoComplete="off"
         />
       </label>
@@ -286,32 +299,26 @@ function Home({
           </div>
         )
       ) : (
-        <div className="shelves">
-          {fields.map((field) => {
-            const list = conceptsIn(field.id);
-            let solid = 0;
-            let started = 0;
-            for (const concept of list) {
-              const status = cardStatus(deck[concept.id], now);
-              if (status === "solid") solid += 1;
-              if (status !== "new") started += 1;
-            }
-            return (
-              <button key={field.id} className="shelf" type="button" onClick={() => onOpenField(field.id)}>
-                <span className="mark">{field.mark}</span>
-                <h2>
-                  {field.name}
-                  <span className="meta"> · {list.length}</span>
-                </h2>
-                <p className="blurb">{field.blurb}</p>
-                <span className="meter" aria-hidden="true">
-                  <i style={{ width: `${list.length ? (started / list.length) * 100 : 0}%` }} />
-                  <b style={{ width: `${list.length ? (solid / list.length) * 100 : 0}%` }} />
-                </span>
-              </button>
-            );
-          })}
-        </div>
+        <>
+          <NotationGuide onStudy={onStudyNotation} onOpen={() => onOpenField("notation")} />
+          <section className="band" aria-labelledby="primer-heading">
+            <p className="eyebrow">First shelves</p>
+            <h2 id="primer-heading">Basics, for a first pass or a refresher.</h2>
+            <p className="lede">
+              Numbers, algebra, functions, trigonometry, calculus, vectors, and the language of a proof. Open a shelf
+              and study it as cards before the later subjects assume them.
+            </p>
+            <ShelfGrid list={fields.filter((field) => field.band === "primer")} deck={deck} now={now} onOpenField={onOpenField} />
+          </section>
+          <section className="band" aria-labelledby="advanced-heading">
+            <p className="eyebrow">Advanced shelves</p>
+            <h2 id="advanced-heading">The rest of the desk.</h2>
+            <p className="lede">
+              Analysis, algebra, geometry, and the subjects that use the first shelves as ordinary language.
+            </p>
+            <ShelfGrid list={fields.filter((field) => field.band === "advanced")} deck={deck} now={now} onOpenField={onOpenField} />
+          </section>
+        </>
       )}
 
       <footer className="foot">
@@ -321,6 +328,47 @@ function Home({
         </button>
       </footer>
     </>
+  );
+}
+
+function ShelfGrid({
+  list,
+  deck,
+  now,
+  onOpenField,
+}: {
+  list: Field[];
+  deck: Deck;
+  now: number;
+  onOpenField: (fieldId: string) => void;
+}) {
+  return (
+    <div className="shelves">
+      {list.map((field) => {
+        const cards = conceptsIn(field.id);
+        let solid = 0;
+        let started = 0;
+        for (const concept of cards) {
+          const status = cardStatus(deck[concept.id], now);
+          if (status === "solid") solid += 1;
+          if (status !== "new") started += 1;
+        }
+        return (
+          <button key={field.id} className="shelf" type="button" onClick={() => onOpenField(field.id)}>
+            <span className="mark">{field.mark}</span>
+            <h2>
+              {field.name}
+              <span className="meta"> · {cards.length}</span>
+            </h2>
+            <p className="blurb">{field.blurb}</p>
+            <span className="meter" aria-hidden="true">
+              <i style={{ width: `${cards.length ? (started / cards.length) * 100 : 0}%` }} />
+              <b style={{ width: `${cards.length ? (solid / cards.length) * 100 : 0}%` }} />
+            </span>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { conceptMap, fields } from "./data";
+import { conceptMap, fields, formulaNotes } from "./data";
 import { Formula } from "./Formula";
 import { cardStatus, dueLabel, schedule } from "./srs";
 import type { Deck, Grade } from "./types";
@@ -174,6 +174,18 @@ export function Study({
                 <Formula tex={concept.formula} />
                 {concept.formulaSays && <p className="says">{concept.formulaSays}</p>}
               </section>
+            )}
+            {concept.formula && formulaNotes[concept.id] && (
+              <>
+                <section className="block">
+                  <h3>The notation</h3>
+                  <p>{formulaNotes[concept.id].notation}</p>
+                </section>
+                <section className="block">
+                  <h3>The proof</h3>
+                  <p>{formulaNotes[concept.id].proof}</p>
+                </section>
+              </>
             )}
             <section className="block">
               <h3>Easy to miss</h3>

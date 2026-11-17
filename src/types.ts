@@ -17,6 +17,7 @@ export type Field = {
   mark: string;
   name: string;
   blurb: string;
+  band: "primer" | "advanced";
 };
 
 export type Grade = "again" | "hard" | "good" | "easy";
